@@ -3,7 +3,7 @@ import { getContext, extension_settings } from '../../../extensions.js';
 import { generateTextGenWithStreaming, getTextGenGenerationData } from '../../../textgen-settings.js';
 import { callGenericPopup, POPUP_TYPE } from '../../../popup.js';
 
-const EXTENSION_NAME = 'translate-ru';
+const EXTENSION_NAME = import.meta.url.split('/').slice(-2)[0];
 
 // ===================== ЯЗЫКИ =====================
 const LANGUAGES = {
@@ -45,7 +45,7 @@ const LANGUAGES = {
     sr: {
         name: 'Српски',
         promptName: 'српски',
-        check: { enabled: false, minUniqueWords: 3, minRatio: 0.05, wordPattern: /^[a-zA-Z]+$/ },
+        check: { enabled: false },
         defaultPrompt: 'Преведите делове текста на {{language}}, остављајући већ написано на {{language}} непромењеним. Само jedna varijanta, bez alternativa i komentara. Sačuvajte formatiranje.',
         ui: { apply: 'Примени', retry: 'Покушај поново', close: 'Затвори' },
     },
@@ -164,12 +164,13 @@ async function translateText(text) {
 
 // ===================== ПОПАП =====================
 function buildPreview(original, translated) {
+    const lang = getLang();
     return `
     <div style="max-height:60vh;overflow-y:auto">
       <table style="width:100%;border-collapse:collapse;font-size:0.9em;table-layout:fixed">
         <tr>
           <td style="padding:0 10px 8px 0;width:50%;color:#ff6b6b">● Оригинал</td>
-          <td style="padding:0 0 8px 10px;width:50%;color:#6bff6b">● ${getLang().name}</td>
+          <td style="padding:0 0 8px 10px;width:50%;color:#6bff6b">● ${lang.name}</td>
         </tr>
         <tr>
           <td style="vertical-align:top;padding:0 10px 0 0;white-space:pre-wrap;font-style:italic">${original}</td>
@@ -246,11 +247,10 @@ function renderSettings() {
     const container = document.querySelector('#translate-ru-settings');
     if (container) container.innerHTML = html;
 
-    // События
     document.querySelector('#translate-ru-lang')?.addEventListener('change', (e) => {
         settings.targetLanguage = e.target.value;
         saveSettingsDebounced();
-        renderSettings(); // перерисовываем чтобы обновить checkbox и placeholder
+        renderSettings();
     });
 
     document.querySelector('#translate-ru-check')?.addEventListener('change', (e) => {
@@ -329,9 +329,8 @@ function processExistingMessages() {
 
 // ===================== ИНИЦИАЛИЗАЦИЯ =====================
 jQuery(async () => {
-    getSettings(); // инициализируем настройки если их нет
+    getSettings();
 
-    // Добавляем контейнер настроек в панель расширений
     const settingsHtml = `
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
@@ -349,5 +348,3 @@ jQuery(async () => {
     processExistingMessages();
     console.log(`[${EXTENSION_NAME}] Загружено`);
 });
-
-
