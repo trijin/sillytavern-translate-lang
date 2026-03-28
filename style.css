@@ -1,0 +1,21 @@
+.translate-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    color: var(--SmartThemeBodyColor);
+    opacity: 0.6;
+    font-size: 14px;
+    transition: opacity 0.2s;
+}
+.translate-btn:hover {
+    opacity: 1;
+}
+.translate-btn.loading {
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

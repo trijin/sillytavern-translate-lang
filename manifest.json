@@ -1,0 +1,12 @@
+{
+  "display_name": "Translate to Russian",
+  "loading_order": 10,
+  "requires": [],
+  "optional": [],
+  "js": "index.js",
+  "css": "style.css",
+  "author": "custom",
+  "version": "0.1.0",
+  "homePage": "",
+  "auto_update": false
+}
