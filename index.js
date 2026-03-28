@@ -31,16 +31,25 @@ async function translateText(text) {
 
 function buildPreview(original, translated) {
     return `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;font-size:0.9em;text-align:left">
-      <div>
-        <div style="color:#ff6b6b;margin-bottom:5px">● Оригинал</div>
-        <div style="white-space:pre-wrap;font-style:italic;max-height:400px;overflow-y:auto">${original}</div>
-      </div>
-      <div>
-        <div style="color:#6bff6b;margin-bottom:5px">● Перевод</div>
-        <div style="white-space:pre-wrap;font-style:italic;max-height:400px;overflow-y:auto">${translated}</div>
-      </div>
+    <div style="max-height:60vh;overflow-y:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:0.9em;table-layout:fixed">
+        <tr>
+          <td style="padding:0 10px 8px 0;width:50%;color:#ff6b6b">● Оригинал</td>
+          <td style="padding:0 0 8px 10px;width:50%;color:#6bff6b">● Перевод</td>
+        </tr>
+        <tr>
+          <td style="vertical-align:top;padding:0 10px 0 0;white-space:pre-wrap;font-style:italic">${original}</td>
+          <td style="vertical-align:top;padding:0 0 0 10px;border-left:1px solid #444;white-space:pre-wrap;font-style:italic">${translated}</td>
+        </tr>
+      </table>
     </div>`;
+}
+
+function expandDialog() {
+    setTimeout(() => {
+        const dlg = document.querySelector('dialog[open]');
+        if (dlg) { dlg.style.maxWidth = '90vw'; dlg.style.width = '900px'; }
+    }, 50);
 }
 
 async function translateAndConfirm(message) {
@@ -48,6 +57,7 @@ async function translateAndConfirm(message) {
     if (!translated) throw new Error('Empty translation');
 
     while (true) {
+        expandDialog();
         const result = await callGenericPopup(
             buildPreview(message.mes, translated),
             POPUP_TYPE.CONFIRM, '',
@@ -58,10 +68,9 @@ async function translateAndConfirm(message) {
             }
         );
 
-        if (result === 1) return translated;   // Применить
-        if (result === 2) return null;          // Закрыть
-        
-        // Повторить
+        if (result === 1) return translated;
+        if (result === 2) return null;
+
         translated = await translateText(message.mes);
         if (!translated) throw new Error('Empty translation');
     }
@@ -95,7 +104,7 @@ function addTranslateButton(messageElement, messageId) {
 
         try {
             const translated = await translateAndConfirm(message);
-            
+
             if (translated) {
                 if (!message.swipes) {
                     message.swipes = [message.mes];
@@ -135,5 +144,4 @@ jQuery(async () => {
     processExistingMessages();
     console.log(`[${EXTENSION_NAME}] Загружено`);
 });
-
 
