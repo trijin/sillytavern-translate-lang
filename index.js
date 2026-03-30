@@ -5,6 +5,80 @@ import { callGenericPopup, POPUP_TYPE } from '../../../popup.js';
 
 const EXTENSION_NAME = import.meta.url.split('/').slice(-2)[0];
 
+// ===================== ТАБЛИЦА ФОРМАТОВ =====================
+const FORMATS_TABLE_HTML = `
+<div style="overflow-x:auto;font-size:0.85em">
+<table style="border-collapse:collapse;width:100%">
+<tr style="border-bottom:1px solid #444">
+  <th style="padding:6px 10px;text-align:left">Формат</th>
+  <th style="padding:6px 10px;text-align:left">Семейство</th>
+  <th style="padding:6px 10px;text-align:left">System</th>
+  <th style="padding:6px 10px;text-align:left">User</th>
+  <th style="padding:6px 10px;text-align:left">Assistant</th>
+</tr>
+<tr style="border-bottom:1px solid #333">
+  <td style="padding:6px 10px">Mistral v1/v3</td>
+  <td style="padding:6px 10px">Mistral, Mixtral, Cydonia</td>
+  <td style="padding:6px 10px"><code>[SYSTEM_PROMPT]...[/SYSTEM_PROMPT]</code></td>
+  <td style="padding:6px 10px"><code>[INST]...[/INST]</code></td>
+  <td style="padding:6px 10px">текст + <code>&lt;/s&gt;</code></td>
+</tr>
+<tr style="border-bottom:1px solid #333">
+  <td style="padding:6px 10px">Llama 2</td>
+  <td style="padding:6px 10px">Llama 2, CodeLlama</td>
+  <td style="padding:6px 10px"><code>&lt;&lt;SYS&gt;&gt;...&lt;&lt;SYS&gt;&gt;</code> внутри INST</td>
+  <td style="padding:6px 10px"><code>[INST]...[/INST]</code></td>
+  <td style="padding:6px 10px">текст + <code>&lt;/s&gt;</code></td>
+</tr>
+<tr style="border-bottom:1px solid #333">
+  <td style="padding:6px 10px">Llama 3</td>
+  <td style="padding:6px 10px">Llama 3.x, 3.1+</td>
+  <td style="padding:6px 10px"><code>&lt;|start_header_id|&gt;system&lt;|end_header_id|&gt;</code></td>
+  <td style="padding:6px 10px"><code>&lt;|start_header_id|&gt;user&lt;|end_header_id|&gt;</code></td>
+  <td style="padding:6px 10px"><code>&lt;|start_header_id|&gt;assistant&lt;|end_header_id|&gt;</code></td>
+</tr>
+<tr style="border-bottom:1px solid #333">
+  <td style="padding:6px 10px">ChatML</td>
+  <td style="padding:6px 10px">Qwen, Mistral-Nemo, OpenHermes</td>
+  <td style="padding:6px 10px"><code>&lt;|im_start|&gt;system</code></td>
+  <td style="padding:6px 10px"><code>&lt;|im_start|&gt;user</code></td>
+  <td style="padding:6px 10px"><code>&lt;|im_start|&gt;assistant</code></td>
+</tr>
+<tr style="border-bottom:1px solid #333">
+  <td style="padding:6px 10px">Alpaca</td>
+  <td style="padding:6px 10px">Alpaca, Vicuna, старые Llama 1</td>
+  <td style="padding:6px 10px"><code>### System:</code></td>
+  <td style="padding:6px 10px"><code>### Instruction:</code></td>
+  <td style="padding:6px 10px"><code>### Response:</code></td>
+</tr>
+<tr style="border-bottom:1px solid #333">
+  <td style="padding:6px 10px">Gemma</td>
+  <td style="padding:6px 10px">Gemma 2, Gemma 3</td>
+  <td style="padding:6px 10px">нет (в начало user)</td>
+  <td style="padding:6px 10px"><code>&lt;start_of_turn&gt;user</code></td>
+  <td style="padding:6px 10px"><code>&lt;start_of_turn&gt;model</code></td>
+</tr>
+<tr style="border-bottom:1px solid #333">
+  <td style="padding:6px 10px">Phi-3/4</td>
+  <td style="padding:6px 10px">Microsoft Phi-3, Phi-4</td>
+  <td style="padding:6px 10px"><code>&lt;|system|&gt;</code></td>
+  <td style="padding:6px 10px"><code>&lt;|user|&gt;</code></td>
+  <td style="padding:6px 10px"><code>&lt;|assistant|&gt;</code></td>
+</tr>
+<tr style="border-bottom:1px solid #333">
+  <td style="padding:6px 10px">DeepSeek</td>
+  <td style="padding:6px 10px">DeepSeek V2/V3/R1</td>
+  <td style="padding:6px 10px">в начало user</td>
+  <td style="padding:6px 10px"><code>&lt;|User|&gt;</code></td>
+  <td style="padding:6px 10px"><code>&lt;|Assistant|&gt;</code></td>
+</tr>
+</table>
+<div style="margin-top:10px;color:#888;font-size:0.9em">
+  Используй <code>{{language}}</code> в промпте для подстановки целевого языка.
+  Теги формата пиши прямо в промпте если нужно.
+</div>
+</div>`;
+
 // ===================== ЯЗЫКИ =====================
 const LANGUAGES = {
     ru: {
@@ -12,98 +86,98 @@ const LANGUAGES = {
         promptName: 'русский',
         check: { enabled: true, minUniqueWords: 3, minRatio: 0.05, wordPattern: /^[a-zA-Z]+$/ },
         defaultPrompt: 'Переведи части текста на {{language}}, оставив уже написанное на {{language}} без изменений. Все слова переводи полностью, никаких гибридных слов. Только один вариант перевода, без альтернатив, комментариев, примечаний и пояснений. Сохраняй форматирование исходного сообщения.',
-        ui: { apply: 'Применить', retry: 'Повторить', close: 'Закрыть' },
+        ui: { apply: 'Применить', retry: 'Повторить', close: 'Закрыть', tooltip: 'Перевести' },
     },
     uk: {
         name: 'Українська',
         promptName: 'українська',
         check: { enabled: true, minUniqueWords: 3, minRatio: 0.05, wordPattern: /^[a-zA-Z]+$/ },
         defaultPrompt: 'Перекладіть частини тексту на {{language}}, залишивши вже написане на {{language}} без змін. Лише один варіант перекладу, без альтернатив та коментарів. Зберігайте форматування.',
-        ui: { apply: 'Застосувати', retry: 'Повторити', close: 'Закрити' },
+        ui: { apply: 'Застосувати', retry: 'Повторити', close: 'Закрити', tooltip: 'Перекласти' },
     },
     be: {
         name: 'Беларуская',
         promptName: 'беларуская',
         check: { enabled: true, minUniqueWords: 3, minRatio: 0.05, wordPattern: /^[a-zA-Z]+$/ },
         defaultPrompt: 'Перакладзіце часткі тэксту на {{language}}, пакінуўшы ўжо напісанае на {{language}} без змен. Толькі адзін варыянт, без альтэрнатыў і каментарыяў. Захоўвайце фарматаванне.',
-        ui: { apply: 'Ужыць', retry: 'Паўтарыць', close: 'Зачыніць' },
+        ui: { apply: 'Ужыць', retry: 'Паўтарыць', close: 'Зачыніць', tooltip: 'Перакласці' },
     },
     kk: {
         name: 'Қазақша',
         promptName: 'қазақ',
         check: { enabled: true, minUniqueWords: 3, minRatio: 0.05, wordPattern: /^[a-zA-Z]+$/ },
         defaultPrompt: 'Мәтіннің бөліктерін {{language}} тіліне аударыңыз, {{language}} тілінде жазылғандарын өзгертпеңіз. Тек бір нұсқа, баламасыз және түсіндірмесіз. Пішімдеуді сақтаңыз.',
-        ui: { apply: 'Қолдану', retry: 'Қайталау', close: 'Жабу' },
+        ui: { apply: 'Қолдану', retry: 'Қайталау', close: 'Жабу', tooltip: 'Аудару' },
     },
     bg: {
         name: 'Български',
         promptName: 'български',
         check: { enabled: true, minUniqueWords: 5, minRatio: 0.1, wordPattern: /^[a-zA-Z]+$/ },
         defaultPrompt: 'Преведете частите на текста на {{language}}, оставяйки вече написаното на {{language}} непроменено. Само един вариант, без алтернативи и коментари. Запазете форматирането.',
-        ui: { apply: 'Приложи', retry: 'Опитай пак', close: 'Затвори' },
+        ui: { apply: 'Приложи', retry: 'Опитай пак', close: 'Затвори', tooltip: 'Преведи' },
     },
     sr: {
         name: 'Српски',
         promptName: 'српски',
         check: { enabled: false },
         defaultPrompt: 'Преведите делове текста на {{language}}, остављајући већ написано на {{language}} непромењеним. Само jedna varijanta, bez alternativa i komentara. Sačuvajte formatiranje.',
-        ui: { apply: 'Примени', retry: 'Покушај поново', close: 'Затвори' },
+        ui: { apply: 'Примени', retry: 'Покушај поново', close: 'Затвори', tooltip: 'Преведи' },
     },
     de: {
         name: 'Deutsch',
         promptName: 'Deutsch',
         check: { enabled: false },
         defaultPrompt: 'Übersetze die nicht-deutschen Teile des Textes ins {{language}}, lasse bereits auf {{language}} geschriebenes unverändert. Nur eine Variante, keine Alternativen oder Kommentare. Behalte die Formatierung bei.',
-        ui: { apply: 'Anwenden', retry: 'Wiederholen', close: 'Schließen' },
+        ui: { apply: 'Anwenden', retry: 'Wiederholen', close: 'Schließen', tooltip: 'Übersetzen' },
     },
     fr: {
         name: 'Français',
         promptName: 'français',
         check: { enabled: false },
         defaultPrompt: 'Traduisez les parties non françaises du texte en {{language}}, en laissant ce qui est déjà en {{language}} inchangé. Une seule variante, sans alternatives ni commentaires. Conservez la mise en forme.',
-        ui: { apply: 'Appliquer', retry: 'Réessayer', close: 'Fermer' },
+        ui: { apply: 'Appliquer', retry: 'Réessayer', close: 'Fermer', tooltip: 'Traduire' },
     },
     es: {
         name: 'Español',
         promptName: 'español',
         check: { enabled: false },
         defaultPrompt: 'Traduce las partes no españolas del texto al {{language}}, dejando lo ya escrito en {{language}} sin cambios. Solo una variante, sin alternativas ni comentarios. Conserva el formato.',
-        ui: { apply: 'Aplicar', retry: 'Reintentar', close: 'Cerrar' },
+        ui: { apply: 'Aplicar', retry: 'Reintentar', close: 'Cerrar', tooltip: 'Traducir' },
     },
     it: {
         name: 'Italiano',
         promptName: 'italiano',
         check: { enabled: false },
         defaultPrompt: 'Traduci le parti non italiane del testo in {{language}}, lasciando invariato ciò che è già scritto in {{language}}. Solo una variante, senza alternative o commenti. Mantieni la formattazione.',
-        ui: { apply: 'Applica', retry: 'Riprova', close: 'Chiudi' },
+        ui: { apply: 'Applica', retry: 'Riprova', close: 'Chiudi', tooltip: 'Tradurre' },
     },
     pl: {
         name: 'Polski',
         promptName: 'polski',
         check: { enabled: false },
         defaultPrompt: 'Przetłumacz niepolskie części tekstu na {{language}}, pozostawiając to, co jest już napisane po {{language}}, bez zmian. Tylko jeden wariant, bez alternatyw i komentarzy. Zachowaj formatowanie.',
-        ui: { apply: 'Zastosuj', retry: 'Spróbuj ponownie', close: 'Zamknij' },
+        ui: { apply: 'Zastosuj', retry: 'Spróbuj ponownie', close: 'Zamknij', tooltip: 'Przetłumacz' },
     },
     zh: {
         name: '中文',
         promptName: '中文',
         check: { enabled: false },
         defaultPrompt: '将文本中非中文的部分翻译成{{language}}，保留已经用{{language}}写的内容不变。只提供一种翻译，不要替代方案或注释。保留原始格式。',
-        ui: { apply: '应用', retry: '重试', close: '关闭' },
+        ui: { apply: '应用', retry: '重试', close: '关闭', tooltip: '翻译' },
     },
     ja: {
         name: '日本語',
         promptName: '日本語',
         check: { enabled: false },
         defaultPrompt: 'テキストの非日本語部分を{{language}}に翻訳し、すでに{{language}}で書かれている部分はそのままにしてください。代替案やコメントなしで、1つのバリアントのみ。書式を維持してください。',
-        ui: { apply: '適用', retry: 'やり直す', close: '閉じる' },
+        ui: { apply: '適用', retry: 'やり直す', close: '閉じる', tooltip: '翻訳' },
     },
     ko: {
         name: '한국어',
         promptName: '한국어',
         check: { enabled: false },
         defaultPrompt: '텍스트의 비한국어 부분을 {{language}}로 번역하고, 이미 {{language}}로 작성된 부분은 그대로 두십시오. 대안이나 주석 없이 하나의 변형만. 서식을 유지하십시오.',
-        ui: { apply: '적용', retry: '다시 시도', close: '닫기' },
+        ui: { apply: '적용', retry: '다시 시도', close: '닫기', tooltip: '번역' },
     },
 };
 
@@ -123,11 +197,16 @@ function getLang() {
     return LANGUAGES[getSettings().targetLanguage] || LANGUAGES.ru;
 }
 
-function getPrompt() {
+function getPrompt(text) {
     const settings = getSettings();
     const lang = getLang();
     const prompt = settings.customPrompt || lang.defaultPrompt;
-    return prompt.replace(/\{\{language\}\}/g, lang.promptName);
+    const withLang = prompt.replace(/\{\{language\}\}/g, lang.promptName);
+    
+    if (withLang.includes('{{text}}')) {
+        return withLang.replace('{{text}}', text);
+    }
+    return `${withLang}\n\n${text}`;
 }
 
 // ===================== ПРОВЕРКА =====================
@@ -148,10 +227,12 @@ function hasTextToTranslate(text) {
 }
 
 // ===================== ПЕРЕВОД =====================
+
 async function translateText(text) {
-    const prompt = `[SYSTEM_PROMPT]${getPrompt()}[/SYSTEM_PROMPT]\n[INST]${text}[/INST]`;
     const abortController = new AbortController();
-    const generateData = await getTextGenGenerationData(prompt, 1500, false, false, null, 'quiet');
+    const generateData = await getTextGenGenerationData(
+        getPrompt(text), 1500, false, false, null, 'quiet'
+    );
     generateData.stopping_strings = [];
     generateData.stop = [];
     const streamFn = await generateTextGenWithStreaming(generateData, abortController.signal);
@@ -236,7 +317,10 @@ function renderSettings() {
                 ${langOptions}
             </select>
             ${checkboxHtml}
-            <label style="display:block;margin-top:12px;margin-bottom:4px">Промпт перевода</label>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:12px;margin-bottom:4px">
+                Промпт перевода
+                <span id="translate-ru-help" style="cursor:pointer;color:#888;font-size:0.85em">❓</span>
+            </label>
             <textarea id="translate-ru-prompt"
                 placeholder="${lang.defaultPrompt}"
                 style="width:100%;height:100px;padding:4px;background:var(--black70);color:var(--SmartThemeBodyColor);border:1px solid var(--SmartThemeBorderColor);resize:vertical;box-sizing:border-box"
@@ -262,6 +346,10 @@ function renderSettings() {
         settings.customPrompt = e.target.value;
         saveSettingsDebounced();
     });
+
+    document.querySelector('#translate-ru-help')?.addEventListener('click', () => {
+        callGenericPopup(FORMATS_TABLE_HTML, POPUP_TYPE.TEXT, '', { okButton: lang.ui.close });
+    });
 }
 
 // ===================== КНОПКА =====================
@@ -274,7 +362,7 @@ function addTranslateButton(messageElement, messageId) {
 
     const btn = document.createElement('button');
     btn.classList.add('translate-btn', 'mes_button');
-    btn.title = 'Перевести';
+    btn.title = getLang().ui.tooltip;
     btn.innerHTML = '🌐';
 
     btn.addEventListener('click', async () => {

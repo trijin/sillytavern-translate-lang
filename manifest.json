@@ -6,7 +6,7 @@
   "js": "index.js",
   "css": "style.css",
   "author": "custom",
-  "version": "0.5.1",
+  "version": "0.5.3",
   "homePage": "https://github.com/trijin/sillytavern-translate-lang",
   "auto_update": false
 }
